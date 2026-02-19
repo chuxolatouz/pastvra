@@ -16,6 +16,7 @@ export default async function UnauthorizedPage() {
     .from("farm_memberships")
     .select("id")
     .eq("user_id", user.id)
+    .eq("active", true)
     .limit(1);
 
   if (memberships?.length) redirect("/app");

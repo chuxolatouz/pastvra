@@ -5,11 +5,11 @@ insert into public.farms (id, name, hectares, low_gain_threshold_adg, overdue_da
 values ('11111111-1111-1111-1111-111111111111', 'Finca Demo Pastvra', 145.5, 0.30, 45)
 on conflict (id) do nothing;
 
-insert into public.farm_memberships (id, farm_id, user_id, role)
+insert into public.farm_memberships (id, farm_id, user_id, role, active)
 values
-  ('22222222-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'admin'),
-  ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'supervisor'),
-  ('22222222-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'operador')
+  ('22222222-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'admin', true),
+  ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'supervisor', true),
+  ('22222222-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 'operador', true)
 on conflict (farm_id, user_id) do nothing;
 
 insert into public.paddocks (id, farm_id, code, hectares, active, notes)
@@ -49,6 +49,58 @@ values
   ('66666666-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', '55555555-4444-4444-4444-444444444444', '2025-12-02', 310, '77777777-4444-4444-4444-444444444444', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'),
   ('66666666-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', '55555555-5555-5555-5555-555555555555', '2025-12-02', 305, '77777777-5555-5555-5555-555555555555', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
 on conflict (client_generated_id) do nothing;
+
+insert into public.inventory_movements (
+  id, farm_id, movement_date, partner_name, destination_name, category_name, opening_balance,
+  purchases_qty, sales_qty, transfers_qty, unit_value_usd, observed_weight_kg, price_per_kg, kg_negotiated,
+  freight_usd, commission_rate, notes, source, source_row_hash, created_by
+)
+values
+  (
+    '99999999-1111-1111-1111-111111111111',
+    '11111111-1111-1111-1111-111111111111',
+    '2025-07-22',
+    'Juan Cortes',
+    'Nueva Granja',
+    'Terneros de 0 a 12 años',
+    0,
+    30,
+    0,
+    0,
+    322.5,
+    190,
+    3,
+    3.5,
+    221,
+    0.035,
+    'Compra de lote inicial',
+    'seed',
+    'seed_inv_1',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+  ),
+  (
+    '99999999-2222-2222-2222-222222222222',
+    '11111111-1111-1111-1111-111111111111',
+    '2025-07-22',
+    'Frigorifico',
+    'Nueva Granja',
+    'Novillas gordas',
+    30,
+    0,
+    20,
+    0,
+    756.46,
+    390,
+    5,
+    5.5,
+    0,
+    0,
+    'Venta parcial',
+    'seed',
+    'seed_inv_2',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+  )
+on conflict (farm_id, source_row_hash) do nothing;
 
 insert into public.animal_events (id, farm_id, animal_id, event_type, event_at, payload, notes, created_by)
 values

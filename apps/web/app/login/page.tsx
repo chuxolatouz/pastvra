@@ -1,5 +1,6 @@
 import { LoginForm } from "@/components/auth/login-form";
 import { createClient } from "@/lib/supabase/server";
+import { defaultRouteForRole } from "@/lib/supabase/session";
 import { redirect } from "next/navigation";
 
 export default async function LoginPage() {
@@ -11,12 +12,16 @@ export default async function LoginPage() {
   if (user) {
     const { data: memberships } = await supabase
       .from("farm_memberships")
-      .select("id")
+      .select("role")
       .eq("user_id", user.id)
+      .eq("active", true)
+      .order("created_at", { ascending: true })
       .limit(1);
 
-    if (memberships?.length) {
-      redirect("/app");
+    const membership = memberships?.[0] as { role: "admin" | "supervisor" | "operador" } | undefined;
+
+    if (membership) {
+      redirect(defaultRouteForRole(membership.role));
     }
 
     redirect("/unauthorized");

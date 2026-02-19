@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { requireMembership } from "@/lib/supabase/session";
 
@@ -17,6 +18,16 @@ export default async function AdminDashboardPage() {
         <Stat title="Bovinos" value={animals.count ?? 0} />
         <Stat title="Potreros" value={paddocks.count ?? 0} />
         <Stat title="Pesajes" value={weights.count ?? 0} />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link href="/admin/inventario" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <CardTitle>Control de inventario</CardTitle>
+          <CardDescription>Ledger con saldos acumulados, costos y filtros.</CardDescription>
+        </Link>
+        <Link href="/admin/pesaje-mensual" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <CardTitle>Control de pesaje mensual</CardTitle>
+          <CardDescription>Matriz ENE..DIC con aumento, GMD y pendientes.</CardDescription>
+        </Link>
       </div>
     </div>
   );

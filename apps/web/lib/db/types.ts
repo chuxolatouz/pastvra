@@ -13,6 +13,8 @@ export type Membership = {
   farm_id: string;
   user_id: string;
   role: Role;
+  active: boolean;
+  created_at: string;
 };
 
 export type Paddock = {
@@ -63,6 +65,8 @@ export type AnimalWeight = {
   weighed_at: string;
   weight_kg: number;
   client_generated_id: string;
+  source: string;
+  source_row_hash: string | null;
   created_by: string;
   created_at: string;
 };
@@ -82,6 +86,43 @@ export type AnimalEvent = {
   event_at: string;
   payload: Record<string, unknown> | null;
   notes: string | null;
+  created_by: string;
+  created_at: string;
+};
+
+export type Profile = {
+  user_id: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventoryMovement = {
+  id: string;
+  farm_id: string;
+  movement_date: string;
+  partner_name: string | null;
+  destination_name: string | null;
+  category_name: string | null;
+  opening_balance: number | null;
+  purchases_qty: number | null;
+  sales_qty: number | null;
+  transfers_qty: number | null;
+  unit_value_usd: number | null;
+  observed_weight_kg: number | null;
+  price_per_kg: number | null;
+  kg_negotiated: number | null;
+  freight_usd: number | null;
+  commission_rate: number | null;
+  notes: string | null;
+  source: string;
+  source_row_hash: string | null;
+  sales_usd: number;
+  purchases_usd: number;
+  transfers_usd: number;
+  commission_usd: number;
+  total_acquisition_usd: number;
+  net_delta_qty: number;
   created_by: string;
   created_at: string;
 };

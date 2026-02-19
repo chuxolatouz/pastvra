@@ -18,6 +18,7 @@ export async function syncPendingWeights(userId: string) {
       weighed_at: item.weighed_at,
       weight_kg: item.weight_kg,
       client_generated_id: item.client_generated_id,
+      source: "offline_sync",
       created_by: userId,
     });
 

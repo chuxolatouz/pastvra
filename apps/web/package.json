@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "import:inventario": "tsx scripts/import-inventario-xlsx.ts",
+    "import:pesaje-mensual": "tsx scripts/import-pesaje-mensual-xlsx.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -17,6 +19,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dexie": "^4.3.0",
+    "dotenv": "^17.3.1",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.574.0",
     "next": "16.1.6",
@@ -26,6 +29,7 @@
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.5.0",
     "uuid": "^13.0.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -36,6 +40,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

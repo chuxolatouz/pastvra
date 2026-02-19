@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     .select("role")
     .eq("farm_id", body.farmId)
     .eq("user_id", user.id)
+    .eq("active", true)
     .single();
 
   if (membership?.role !== "admin") {

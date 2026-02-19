@@ -23,11 +23,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link className="block rounded-xl bg-slate-100 px-3 py-2" href="/admin/bovinos">
               Bovinos
             </Link>
-            {membership.role === "admin" && (
-              <Link className="block rounded-xl bg-slate-100 px-3 py-2" href="/admin/usuarios">
-                Usuarios
-              </Link>
-            )}
+            <Link className="block rounded-xl bg-slate-100 px-3 py-2" href="/admin/inventario">
+              Inventario
+            </Link>
+            <Link className="block rounded-xl bg-slate-100 px-3 py-2" href="/admin/pesaje-mensual">
+              Pesaje mensual
+            </Link>
+            <Link className="block rounded-xl bg-slate-100 px-3 py-2" href="/admin/usuarios">
+              Usuarios
+            </Link>
           </nav>
         </aside>
         <section>{children}</section>

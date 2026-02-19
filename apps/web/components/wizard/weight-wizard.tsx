@@ -116,6 +116,8 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
                 weighed_at: cached.last_weighed_at ?? new Date().toISOString().slice(0, 10),
                 weight_kg: cached.last_weight_kg,
                 client_generated_id: "offline",
+                source: "offline_cache",
+                source_row_hash: null,
                 created_by: userId,
                 created_at: new Date().toISOString(),
               },
@@ -140,6 +142,7 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
         weighed_at: weighedAt,
         weight_kg: Number(weightKg),
         client_generated_id: clientGeneratedId,
+        source: "wizard",
         created_by: userId,
       });
 
