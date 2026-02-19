@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0284c7"/>
+  <circle cx="180" cy="210" r="70" fill="#fff"/>
+  <circle cx="332" cy="210" r="70" fill="#fff"/>
+  <rect x="130" y="290" width="252" height="120" rx="30" fill="#e0f2fe"/>
+  <text x="256" y="365" text-anchor="middle" fill="#0c4a6e" font-size="62" font-family="Verdana" font-weight="700">PV</text>
+</svg>

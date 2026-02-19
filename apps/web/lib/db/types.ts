@@ -1,0 +1,87 @@
+export type Role = "admin" | "supervisor" | "operador";
+
+export type Farm = {
+  id: string;
+  name: string;
+  hectares: number | null;
+  low_gain_threshold_adg: number;
+  overdue_days: number;
+};
+
+export type Membership = {
+  id: string;
+  farm_id: string;
+  user_id: string;
+  role: Role;
+};
+
+export type Paddock = {
+  id: string;
+  farm_id: string;
+  code: string;
+  hectares: number | null;
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+};
+
+export type SoilTest = {
+  id: string;
+  farm_id: string;
+  paddock_id: string;
+  tested_at: string;
+  ph: number | null;
+  grass_percent: number | null;
+  sugar_percent: number | null;
+  notes: string | null;
+};
+
+export type Animal = {
+  id: string;
+  farm_id: string;
+  chip_id: string | null;
+  ear_tag: string | null;
+  name: string | null;
+  sex: "M" | "H";
+  breed: string | null;
+  birth_date: string;
+  cost: number | null;
+  status: "vivo" | "vendido" | "muerto" | "extraviado";
+  notes: string | null;
+  photo_path: string | null;
+  current_paddock_id: string | null;
+  sire_id: string | null;
+  dam_id: string | null;
+  sire_external: string | null;
+  dam_external: string | null;
+};
+
+export type AnimalWeight = {
+  id: string;
+  farm_id: string;
+  animal_id: string;
+  weighed_at: string;
+  weight_kg: number;
+  client_generated_id: string;
+  created_by: string;
+  created_at: string;
+};
+
+export type AnimalEvent = {
+  id: string;
+  farm_id: string;
+  animal_id: string;
+  event_type:
+    | "vacuna"
+    | "desparasitacion"
+    | "parto"
+    | "venta"
+    | "compra"
+    | "traslado_potrero"
+    | "otro";
+  event_at: string;
+  payload: Record<string, unknown> | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+};

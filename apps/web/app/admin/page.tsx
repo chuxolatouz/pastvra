@@ -1,0 +1,32 @@
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { requireMembership } from "@/lib/supabase/session";
+
+export default async function AdminDashboardPage() {
+  const { supabase, membership } = await requireMembership("supervisor");
+
+  const [animals, paddocks, weights] = await Promise.all([
+    supabase.from("animals").select("id", { count: "exact", head: true }).eq("farm_id", membership.farm_id),
+    supabase.from("paddocks").select("id", { count: "exact", head: true }).eq("farm_id", membership.farm_id),
+    supabase.from("animal_weights").select("id", { count: "exact", head: true }).eq("farm_id", membership.farm_id),
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-black">Dashboard</h2>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Stat title="Bovinos" value={animals.count ?? 0} />
+        <Stat title="Potreros" value={paddocks.count ?? 0} />
+        <Stat title="Pesajes" value={weights.count ?? 0} />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ title, value }: { title: string; value: number }) {
+  return (
+    <Card>
+      <CardTitle>{title}</CardTitle>
+      <CardDescription className="text-3xl font-black text-sky-700">{value}</CardDescription>
+    </Card>
+  );
+}
