@@ -30,6 +30,9 @@ export function MonthlyWeightReport({
 }) {
   const supabase = createClient();
   const [year, setYear] = useState(new Date().getFullYear());
+  const [showFilters, setShowFilters] = useState(false);
+  const [animalSearch, setAnimalSearch] = useState("");
+  const [pendingOnly, setPendingOnly] = useState(false);
   const [weights, setWeights] = useState<AnimalWeight[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -64,6 +67,15 @@ export function MonthlyWeightReport({
   }, [year, farmId]);
 
   const rows = useMemo(() => buildMonthlyMatrix({ animals, weights, year }), [animals, weights, year]);
+  const filteredRows = useMemo(() => {
+    const q = animalSearch.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (pendingOnly && !row.pendingCurrentMonth) return false;
+      if (!q) return true;
+      const ref = `${row.animal.name ?? ""} ${row.animal.chip_id ?? ""} ${row.animal.ear_tag ?? ""}`.toLowerCase();
+      return ref.includes(q);
+    });
+  }, [rows, animalSearch, pendingOnly]);
 
   const openEditor = (animalId: string, animalName: string, month: number, currentWeight: number | null) => {
     const now = new Date();
@@ -106,14 +118,45 @@ export function MonthlyWeightReport({
   return (
     <div className="space-y-4">
       <Card className="space-y-3">
-        <CardTitle>Control de pesaje mensual</CardTitle>
-        <CardDescription>
-          Regla de cálculo: aumento mensual = peso actual - peso mes anterior. GMD = aumento / 30.
-        </CardDescription>
-        <div className="max-w-40">
-          <Label>Año</Label>
-          <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <CardTitle>Control de pesaje mensual</CardTitle>
+            <CardDescription>
+              Regla de cálculo: aumento mensual = peso actual - peso mes anterior. GMD = aumento / 30.
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowFilters((s) => !s)}>
+            {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+          </Button>
         </div>
+        {showFilters ? (
+          <div className="grid gap-3 md:grid-cols-3">
+            <div>
+              <Label>Año</Label>
+              <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+            </div>
+            <div>
+              <Label>Buscar animal</Label>
+              <Input
+                value={animalSearch}
+                placeholder="Nombre, chip o arete"
+                onChange={(e) => setAnimalSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={pendingOnly}
+                  onChange={(e) => setPendingOnly(e.target.checked)}
+                />
+                Solo pendientes
+              </label>
+            </div>
+          </div>
+        ) : (
+          <CardDescription>Filtros opcionales ocultos para evitar romper la vista.</CardDescription>
+        )}
       </Card>
 
       <Card>
@@ -133,7 +176,7 @@ export function MonthlyWeightReport({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {filteredRows.map((row) => (
                 <tr key={row.animal.id} className="border-b align-top">
                   <td className="px-2 py-2">
                     <p className="font-semibold">{row.animal.name || row.animal.ear_tag || row.animal.chip_id || row.animal.id}</p>
@@ -164,7 +207,7 @@ export function MonthlyWeightReport({
                   <td className="px-2 py-2">{row.gmdAnnual !== null ? row.gmdAnnual.toFixed(3) : "-"}</td>
                 </tr>
               ))}
-              {!rows.length && (
+              {!filteredRows.length && (
                 <tr>
                   <td colSpan={15} className="px-2 py-4 text-center text-slate-500">
                     No hay animales para mostrar.

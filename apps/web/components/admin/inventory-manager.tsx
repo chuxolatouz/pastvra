@@ -59,6 +59,7 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
 
   const [rows, setRows] = useState<InventoryMovement[]>([]);
   const [form, setForm] = useState<FormState>(initialForm);
+  const [showFilters, setShowFilters] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [destinationFilter, setDestinationFilter] = useState("todos");
@@ -112,6 +113,8 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
   }, [farmId, fromDate, toDate, destinationFilter, categoryFilter]);
 
   const { ledger, totals } = useMemo(() => buildInventoryLedger(rows), [rows]);
+  const activeFilterCount = [fromDate, toDate, destinationFilter !== "todos", categoryFilter !== "todos"].filter(Boolean)
+    .length;
 
   const saveMovement = async () => {
     setLoading(true);
@@ -167,39 +170,67 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
       </Card>
 
       <Card className="space-y-3">
-        <CardTitle>Filtros</CardTitle>
-        <div className="grid gap-3 md:grid-cols-4">
-          <div>
-            <Label>Desde</Label>
-            <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-          </div>
-          <div>
-            <Label>Hasta</Label>
-            <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-          </div>
-          <div>
-            <Label>Destino</Label>
-            <Select value={destinationFilter} onChange={(e) => setDestinationFilter(e.target.value)}>
-              <option value="todos">Todos</option>
-              {destinations.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <Label>Categoría</Label>
-            <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-              <option value="todos">Todas</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>Filtros</CardTitle>
+          <div className="flex items-center gap-2">
+            {activeFilterCount > 0 && <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-800">{activeFilterCount} activos</span>}
+            <Button variant="outline" size="sm" onClick={() => setShowFilters((s) => !s)}>
+              {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+            </Button>
           </div>
         </div>
+        {showFilters ? (
+          <>
+            <div className="grid gap-3 md:grid-cols-4">
+              <div>
+                <Label>Desde</Label>
+                <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+              </div>
+              <div>
+                <Label>Hasta</Label>
+                <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+              </div>
+              <div>
+                <Label>Destino</Label>
+                <Select value={destinationFilter} onChange={(e) => setDestinationFilter(e.target.value)}>
+                  <option value="todos">Todos</option>
+                  {destinations.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label>Categoría</Label>
+                <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                  <option value="todos">Todas</option>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setFromDate("");
+                  setToDate("");
+                  setDestinationFilter("todos");
+                  setCategoryFilter("todos");
+                }}
+              >
+                Limpiar filtros
+              </Button>
+            </div>
+          </>
+        ) : (
+          <CardDescription>Filtros avanzados ocultos para mantener la vista compacta.</CardDescription>
+        )}
       </Card>
 
       <Card className="space-y-3">
