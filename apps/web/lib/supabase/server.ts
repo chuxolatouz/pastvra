@@ -12,9 +12,14 @@ export async function createClient() {
         return cookieStore.getAll();
       },
       setAll(items) {
-        items.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
+        try {
+          items.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // In Server Components, Next.js can block cookie writes.
+          // The proxy handles refresh/session cookie updates.
+        }
       },
     },
   });
