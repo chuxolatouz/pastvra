@@ -68,12 +68,15 @@ Asumiendo base local `http://localhost:3000` (en prod reemplaza dominio):
 - `/admin/finca`
 - `/admin/fincas`
 - `/admin/fincas/[id]`
+- `/admin/fincas/nueva`
 - `/admin/potreros`
 - `/admin/potreros/[id]`
+- `/admin/potreros/nuevo`
 - `/admin/bovinos`
 - `/admin/animales`
 - `/admin/animales/[id]`
 - `/admin/animales/[id]/genealogia`
+- `/admin/animales/nuevo`
 - `/admin/inventario`
 - `/admin/pesaje-mensual`
 - `/admin/usuarios`
@@ -82,6 +85,7 @@ Asumiendo base local `http://localhost:3000` (en prod reemplaza dominio):
 - `/app/animales/[id]`
 - `/app/animales/[id]/genealogia`
 - `/api/admin/invite` (POST)
+- `/api/admin/farms` (POST)
 - `/api/admin/users/invite` (POST)
 - `/api/admin/users/role` (PATCH)
 - `/api/admin/users/active` (PATCH)
@@ -207,6 +211,7 @@ Idempotencia:
 - Roles `admin`, `supervisor`, `operador` por finca
 - Admin separado (`/admin/*`) y operación (`/app/*`)
 - Detalle animal separado por contexto (`/admin/animales/*` y `/app/animales/*`)
+- Estándar de alta separado por módulo (`.../nuevo` o `.../nueva` para fincas, animales y potreros)
 - CRUD finca, potreros (+ análisis de suelo), animales, membresías
 - Wizard de pesaje 5 pasos con:
   - QR scan y entrada manual chip/arete

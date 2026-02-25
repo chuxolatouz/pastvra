@@ -43,8 +43,15 @@ export default async function AdminAnimalsPage() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-black">Animales</h2>
-      <p className="text-sm text-slate-600">Grilla general para gestión administrativa y acceso al detalle por animal.</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-2xl font-black">Animales</h2>
+          <p className="text-sm text-slate-600">Grilla general para gestión administrativa y acceso al detalle por animal.</p>
+        </div>
+        <Link href="/admin/animales/nuevo" className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-semibold text-white">
+          Nuevo animal
+        </Link>
+      </div>
 
       <div className="grid gap-2 md:grid-cols-2">
         {animals.map((animal) => (
@@ -70,11 +77,12 @@ export default async function AdminAnimalsPage() {
       )}
 
       <Card className="space-y-3">
-        <CardTitle>Alta y edición rápida (finca actual)</CardTitle>
+        <CardTitle>Edición rápida (finca actual)</CardTitle>
         <CardDescription>
-          Este formulario usa la finca activa de tu sesión ({membership.farm_id}).
+          La creación está estandarizada en la vista de alta. Aquí puedes editar animales de la finca activa (
+          {membership.farm_id}).
         </CardDescription>
-        <AnimalsManager farmId={membership.farm_id} detailBasePath="/admin/animales" />
+        <AnimalsManager farmId={membership.farm_id} detailBasePath="/admin/animales" allowCreate={false} />
       </Card>
     </div>
   );

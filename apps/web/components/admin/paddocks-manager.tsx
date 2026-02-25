@@ -11,7 +11,15 @@ import { Label } from "@/components/ui/label";
 import { useSnack } from "@/components/ui/snack";
 import { Textarea } from "@/components/ui/textarea";
 
-export function PaddocksManager({ farmId }: { farmId: string }) {
+export function PaddocksManager({
+  farmId,
+  showCreateForm = true,
+  showList = true,
+}: {
+  farmId: string;
+  showCreateForm?: boolean;
+  showList?: boolean;
+}) {
   const snack = useSnack();
   const [items, setItems] = useState<Paddock[]>([]);
   const [code, setCode] = useState("");
@@ -54,42 +62,54 @@ export function PaddocksManager({ farmId }: { farmId: string }) {
     setCode("");
     setHectares("");
     setNotes("");
-    await load();
+    if (showList) {
+      await load();
+    }
   };
 
   return (
     <div className="space-y-4">
-      <Card className="space-y-3">
-        <CardTitle>Nuevo potrero</CardTitle>
-        <div>
-          <Label>Código</Label>
-          <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="P-01" />
-        </div>
-        <div>
-          <Label>Hectáreas</Label>
-          <Input value={hectares} onChange={(e) => setHectares(e.target.value)} type="number" step="0.01" />
-        </div>
-        <div>
-          <Label>Notas</Label>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </div>
-        <Button onClick={create}>Crear potrero</Button>
-        <CardDescription>Los cambios se guardan y se reflejan de inmediato en la lista.</CardDescription>
-      </Card>
+      {showCreateForm && (
+        <Card className="space-y-3">
+          <CardTitle>Nuevo potrero</CardTitle>
+          <div>
+            <Label>Código</Label>
+            <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="P-01" />
+          </div>
+          <div>
+            <Label>Hectáreas</Label>
+            <Input value={hectares} onChange={(e) => setHectares(e.target.value)} type="number" step="0.01" />
+          </div>
+          <div>
+            <Label>Notas</Label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <Button onClick={create}>Crear potrero</Button>
+          <CardDescription>Los cambios se guardan y se reflejan de inmediato en la lista.</CardDescription>
+        </Card>
+      )}
 
-      <div className="space-y-3">
-        {items.map((p) => (
-          <Card key={p.id} className="flex items-center justify-between">
-            <div>
-              <CardTitle>{p.code}</CardTitle>
-              <CardDescription>{p.hectares ? `${p.hectares} ha` : "Sin hectáreas"}</CardDescription>
-            </div>
-            <Link href={`/admin/potreros/${p.id}`} className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold">
-              Ver detalle
-            </Link>
-          </Card>
-        ))}
-      </div>
+      {showList && (
+        <div className="space-y-3">
+          {items.map((p) => (
+            <Card key={p.id} className="flex items-center justify-between">
+              <div>
+                <CardTitle>{p.code}</CardTitle>
+                <CardDescription>{p.hectares ? `${p.hectares} ha` : "Sin hectáreas"}</CardDescription>
+              </div>
+              <Link href={`/admin/potreros/${p.id}`} className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold">
+                Ver detalle
+              </Link>
+            </Card>
+          ))}
+          {!items.length && (
+            <Card>
+              <CardTitle>Sin potreros</CardTitle>
+              <CardDescription>No hay potreros registrados para esta finca.</CardDescription>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

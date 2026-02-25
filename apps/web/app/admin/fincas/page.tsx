@@ -21,6 +21,7 @@ export default async function AdminFarmsGridPage() {
     .order("created_at", { ascending: true });
 
   const rows = (data ?? []) as MembershipFarmRow[];
+  const canCreate = rows.some((row) => row.role === "admin");
 
   const farms = await Promise.all(
     rows
@@ -48,8 +49,17 @@ export default async function AdminFarmsGridPage() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-black">Fincas</h2>
-      <p className="text-sm text-slate-600">Vista administrativa por finca con acceso rápido a su información y animales.</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-2xl font-black">Fincas</h2>
+          <p className="text-sm text-slate-600">Vista administrativa por finca con acceso rápido a su información y animales.</p>
+        </div>
+        {canCreate && (
+          <Link href="/admin/fincas/nueva" className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-semibold text-white">
+            Nueva finca
+          </Link>
+        )}
+      </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {farms.map((item) => (

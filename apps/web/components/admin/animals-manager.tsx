@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Animal, Paddock } from "@/lib/db/types";
@@ -33,9 +33,15 @@ const base = {
 export function AnimalsManager({
   farmId,
   detailBasePath = "/admin/animales",
+  showForm = true,
+  showList = true,
+  allowCreate = true,
 }: {
   farmId: string;
   detailBasePath?: string;
+  showForm?: boolean;
+  showList?: boolean;
+  allowCreate?: boolean;
 }) {
   const snack = useSnack();
   const [items, setItems] = useState<Animal[]>([]);
@@ -44,7 +50,7 @@ export function AnimalsManager({
   const [form, setForm] = useState(base);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const supabase = createClient();
     const [{ data: animals, error: animalsError }, { data: padds, error: paddocksError }] = await Promise.all([
       supabase.from("animals").select("*").eq("farm_id", farmId).order("created_at", { ascending: false }),
@@ -63,12 +69,11 @@ export function AnimalsManager({
 
     setItems((animals ?? []) as Animal[]);
     setPaddocks((padds ?? []) as Paddock[]);
-  };
+  }, [farmId, snack]);
 
   useEffect(() => {
     load().catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [farmId]);
+  }, [load]);
 
   const filtered = useMemo(() => {
     const t = search.trim().toLowerCase();
@@ -101,6 +106,11 @@ export function AnimalsManager({
   };
 
   const save = async () => {
+    if (!allowCreate && !editingId) {
+      snack.error("Alta deshabilitada en esta vista", "Usa la ruta de creación para registrar un nuevo animal.");
+      return;
+    }
+
     const supabase = createClient();
     const payload = {
       farm_id: farmId,
@@ -137,170 +147,187 @@ export function AnimalsManager({
     await load();
   };
 
+  const shouldShowForm = showForm && (allowCreate || editingId !== null);
+
   return (
     <div className="space-y-4">
-      <Card className="space-y-3">
-        <CardTitle>{editingId ? "Editar animal" : "Nuevo animal"}</CardTitle>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <Label>Rubro</Label>
-            <Select value={form.rubro} onChange={(e) => setForm((s) => ({ ...s, rubro: e.target.value }))}>
-              <option value="bovino">Bovino</option>
-              <option value="bufalino">Bufalino</option>
-            </Select>
-          </div>
-          <div>
-            <Label>Género</Label>
-            <Select value={form.sex} onChange={(e) => setForm((s) => ({ ...s, sex: e.target.value }))}>
-              <option value="H">Hembra</option>
-              <option value="M">Macho</option>
-            </Select>
-          </div>
-          <div>
-            <Label>Chip / identificador (opcional)</Label>
-            <Input
-              value={form.chip_id}
-              onChange={(e) => setForm((s) => ({ ...s, chip_id: e.target.value }))}
-              placeholder="Ej: 4333"
-            />
-          </div>
-          <div>
-            <Label>Arete</Label>
-            <Input value={form.ear_tag} onChange={(e) => setForm((s) => ({ ...s, ear_tag: e.target.value }))} />
-          </div>
-          <div>
-            <Label>Nombre</Label>
-            <Input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
-          </div>
-          <div>
-            <Label>Raza</Label>
-            <Input value={form.breed} onChange={(e) => setForm((s) => ({ ...s, breed: e.target.value }))} />
-          </div>
-          <div>
-            <Label>Nacimiento</Label>
-            <Input
-              type="date"
-              value={form.birth_date}
-              onChange={(e) => setForm((s) => ({ ...s, birth_date: e.target.value }))}
-            />
-          </div>
-          <div>
-            <Label>Costo</Label>
-            <Input value={form.cost} onChange={(e) => setForm((s) => ({ ...s, cost: e.target.value }))} type="number" />
-          </div>
-          <div>
-            <Label>Estado</Label>
-            <Select value={form.status} onChange={(e) => setForm((s) => ({ ...s, status: e.target.value }))}>
-              <option value="vivo">Vivo</option>
-              <option value="vendido">Vendido</option>
-              <option value="muerto">Muerto</option>
-              <option value="extraviado">Extraviado</option>
-            </Select>
-          </div>
-          <div>
-            <Label>Potrero actual</Label>
-            <Select
-              value={form.current_paddock_id}
-              onChange={(e) => setForm((s) => ({ ...s, current_paddock_id: e.target.value }))}
-            >
-              <option value="">Sin asignar</option>
-              {paddocks.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <Label>Padre (interno)</Label>
-            <Select value={form.sire_id} onChange={(e) => setForm((s) => ({ ...s, sire_id: e.target.value }))}>
-              <option value="">Desconocido</option>
-              {items.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name || a.ear_tag || a.chip_id || a.id.slice(0, 6)}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <Label>Madre (interna)</Label>
-            <Select value={form.dam_id} onChange={(e) => setForm((s) => ({ ...s, dam_id: e.target.value }))}>
-              <option value="">Desconocida</option>
-              {items.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name || a.ear_tag || a.chip_id || a.id.slice(0, 6)}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <Label>Padre externo</Label>
-            <Input
-              value={form.sire_external}
-              onChange={(e) => setForm((s) => ({ ...s, sire_external: e.target.value }))}
-            />
-          </div>
-          <div>
-            <Label>Madre externa</Label>
-            <Input
-              value={form.dam_external}
-              onChange={(e) => setForm((s) => ({ ...s, dam_external: e.target.value }))}
-            />
-          </div>
-        </div>
-        <div>
-          <Label>Notas</Label>
-          <Textarea value={form.notes} onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))} />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={save}>{editingId ? "Actualizar" : "Crear"}</Button>
-          {editingId && (
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setEditingId(null);
-                setForm(base);
-              }}
-            >
-              Cancelar edición
-            </Button>
-          )}
-        </div>
-        <CardDescription>El identificador por chip es opcional y admite texto libre.</CardDescription>
-      </Card>
-
-      <Card className="space-y-3">
-        <CardTitle>Listado de animales</CardTitle>
-        <Input
-          placeholder="Buscar por chip, arete, nombre o rubro"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <div className="space-y-2">
-          {filtered.map((a) => (
-            <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3">
-              <div>
-                <p className="font-bold text-slate-900">{a.name || "Sin nombre"}</p>
-                <p className="text-sm text-slate-600">
-                  Rubro: {a.rubro === "bovino" ? "Bovino" : "Bufalino"} | Chip: {a.chip_id || "-"} | Arete: {a.ear_tag || "-"}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => fillEdit(a)}>
-                  Editar
-                </Button>
-                <Link
-                  href={`${detailBasePath}/${a.id}`}
-                  className="rounded-xl bg-slate-200 px-3 py-2 text-sm font-semibold"
-                >
-                  Ver detalle
-                </Link>
-              </div>
+      {shouldShowForm && (
+        <Card className="space-y-3">
+          <CardTitle>{editingId ? "Editar animal" : "Nuevo animal"}</CardTitle>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <Label>Rubro</Label>
+              <Select value={form.rubro} onChange={(e) => setForm((s) => ({ ...s, rubro: e.target.value }))}>
+                <option value="bovino">Bovino</option>
+                <option value="bufalino">Bufalino</option>
+              </Select>
             </div>
-          ))}
-          {!filtered.length && <CardDescription>No hay animales para mostrar con ese filtro.</CardDescription>}
-        </div>
-      </Card>
+            <div>
+              <Label>Género</Label>
+              <Select value={form.sex} onChange={(e) => setForm((s) => ({ ...s, sex: e.target.value }))}>
+                <option value="H">Hembra</option>
+                <option value="M">Macho</option>
+              </Select>
+            </div>
+            <div>
+              <Label>Chip / identificador (opcional)</Label>
+              <Input
+                value={form.chip_id}
+                onChange={(e) => setForm((s) => ({ ...s, chip_id: e.target.value }))}
+                placeholder="Ej: 4333"
+              />
+            </div>
+            <div>
+              <Label>Arete</Label>
+              <Input value={form.ear_tag} onChange={(e) => setForm((s) => ({ ...s, ear_tag: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Nombre</Label>
+              <Input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Raza</Label>
+              <Input value={form.breed} onChange={(e) => setForm((s) => ({ ...s, breed: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Nacimiento</Label>
+              <Input
+                type="date"
+                value={form.birth_date}
+                onChange={(e) => setForm((s) => ({ ...s, birth_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Costo</Label>
+              <Input
+                value={form.cost}
+                onChange={(e) => setForm((s) => ({ ...s, cost: e.target.value }))}
+                type="number"
+              />
+            </div>
+            <div>
+              <Label>Estado</Label>
+              <Select value={form.status} onChange={(e) => setForm((s) => ({ ...s, status: e.target.value }))}>
+                <option value="vivo">Vivo</option>
+                <option value="vendido">Vendido</option>
+                <option value="muerto">Muerto</option>
+                <option value="extraviado">Extraviado</option>
+              </Select>
+            </div>
+            <div>
+              <Label>Potrero actual</Label>
+              <Select
+                value={form.current_paddock_id}
+                onChange={(e) => setForm((s) => ({ ...s, current_paddock_id: e.target.value }))}
+              >
+                <option value="">Sin asignar</option>
+                {paddocks.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label>Padre (interno)</Label>
+              <Select value={form.sire_id} onChange={(e) => setForm((s) => ({ ...s, sire_id: e.target.value }))}>
+                <option value="">Desconocido</option>
+                {items.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name || a.ear_tag || a.chip_id || a.id.slice(0, 6)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label>Madre (interna)</Label>
+              <Select value={form.dam_id} onChange={(e) => setForm((s) => ({ ...s, dam_id: e.target.value }))}>
+                <option value="">Desconocida</option>
+                {items.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name || a.ear_tag || a.chip_id || a.id.slice(0, 6)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label>Padre externo</Label>
+              <Input
+                value={form.sire_external}
+                onChange={(e) => setForm((s) => ({ ...s, sire_external: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Madre externa</Label>
+              <Input
+                value={form.dam_external}
+                onChange={(e) => setForm((s) => ({ ...s, dam_external: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Notas</Label>
+            <Textarea value={form.notes} onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))} />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={save}>{editingId ? "Actualizar" : "Crear"}</Button>
+            {editingId && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm(base);
+                }}
+              >
+                Cancelar edición
+              </Button>
+            )}
+          </div>
+          <CardDescription>
+            {allowCreate
+              ? "El identificador por chip es opcional y admite texto libre."
+              : "La creación está separada en otra vista. Aquí puedes editar desde el listado."}
+          </CardDescription>
+        </Card>
+      )}
+
+      {showList && (
+        <Card className="space-y-3">
+          <CardTitle>Listado de animales</CardTitle>
+          <Input
+            placeholder="Buscar por chip, arete, nombre o rubro"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <div className="space-y-2">
+            {filtered.map((a) => (
+              <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3">
+                <div>
+                  <p className="font-bold text-slate-900">{a.name || "Sin nombre"}</p>
+                  <p className="text-sm text-slate-600">
+                    Rubro: {a.rubro === "bovino" ? "Bovino" : "Bufalino"} | Chip: {a.chip_id || "-"} | Arete:{" "}
+                    {a.ear_tag || "-"}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {showForm && (
+                    <Button variant="outline" size="sm" onClick={() => fillEdit(a)}>
+                      Editar
+                    </Button>
+                  )}
+                  <Link
+                    href={`${detailBasePath}/${a.id}`}
+                    className="rounded-xl bg-slate-200 px-3 py-2 text-sm font-semibold"
+                  >
+                    Ver detalle
+                  </Link>
+                </div>
+              </div>
+            ))}
+            {!filtered.length && <CardDescription>No hay animales para mostrar con ese filtro.</CardDescription>}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
