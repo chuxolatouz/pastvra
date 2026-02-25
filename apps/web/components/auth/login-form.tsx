@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSnack } from "@/components/ui/snack";
 
 export function LoginForm() {
   const router = useRouter();
+  const snack = useSnack();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,10 +26,12 @@ export function LoginForm() {
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) {
       setError(authError.message);
+      snack.error("No se pudo iniciar sesión", authError.message);
       setLoading(false);
       return;
     }
 
+    snack.success("Sesión iniciada", "Acceso correcto.");
     router.replace("/app");
     router.refresh();
   };

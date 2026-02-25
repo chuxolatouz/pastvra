@@ -41,6 +41,7 @@ export type SoilTest = {
 export type Animal = {
   id: string;
   farm_id: string;
+  rubro: "bovino" | "bufalino";
   chip_id: string | null;
   ear_tag: string | null;
   name: string | null;

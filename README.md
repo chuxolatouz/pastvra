@@ -33,7 +33,8 @@ NEXT_PUBLIC_APP_NAME=Pastvra
    2. `supabase/migrations/002_policies.sql`
    3. `supabase/migrations/003_inventory_monthly_users.sql`
    4. `supabase/migrations/004_policies_inventory_monthly_users.sql`
-   5. `supabase/seed.sql`
+   5. `supabase/migrations/005_animals_rubro.sql`
+   6. `supabase/seed.sql`
 3. En `seed.sql`, reemplazar `user_id` demo por UUIDs reales de `auth.users`.
 4. Crear bucket de Storage (ej. `animal-photos`) si usarás fotos de bovinos.
 
@@ -65,14 +66,21 @@ Asumiendo base local `http://localhost:3000` (en prod reemplaza dominio):
 - `/app/help`
 - `/admin`
 - `/admin/finca`
+- `/admin/fincas`
+- `/admin/fincas/[id]`
 - `/admin/potreros`
 - `/admin/potreros/[id]`
 - `/admin/bovinos`
+- `/admin/animales`
+- `/admin/animales/[id]`
+- `/admin/animales/[id]/genealogia`
 - `/admin/inventario`
 - `/admin/pesaje-mensual`
 - `/admin/usuarios`
 - `/animal/[id]`
 - `/animal/[id]/genealogia`
+- `/app/animales/[id]`
+- `/app/animales/[id]/genealogia`
 - `/api/admin/invite` (POST)
 - `/api/admin/users/invite` (POST)
 - `/api/admin/users/role` (PATCH)
@@ -198,7 +206,8 @@ Idempotencia:
 - Login con email/password (Supabase Auth SSR con `@supabase/ssr`)
 - Roles `admin`, `supervisor`, `operador` por finca
 - Admin separado (`/admin/*`) y operación (`/app/*`)
-- CRUD finca, potreros (+ soil tests), bovinos, memberships
+- Detalle animal separado por contexto (`/admin/animales/*` y `/app/animales/*`)
+- CRUD finca, potreros (+ análisis de suelo), animales, membresías
 - Wizard de pesaje 5 pasos con:
   - QR scan y entrada manual chip/arete
   - último peso/fecha

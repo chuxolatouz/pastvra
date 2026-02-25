@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSnack } from "@/components/ui/snack";
 
 type EditState = {
   animalId: string;
@@ -29,13 +30,13 @@ export function MonthlyWeightReport({
   animals: Animal[];
 }) {
   const supabase = createClient();
+  const snack = useSnack();
   const [year, setYear] = useState(new Date().getFullYear());
   const [showFilters, setShowFilters] = useState(false);
   const [animalSearch, setAnimalSearch] = useState("");
   const [pendingOnly, setPendingOnly] = useState(false);
   const [weights, setWeights] = useState<AnimalWeight[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [edit, setEdit] = useState<EditState | null>(null);
 
   const load = async () => {
@@ -52,7 +53,7 @@ export function MonthlyWeightReport({
       .order("weighed_at", { ascending: true });
 
     if (error) {
-      setMessage(error.message);
+      snack.error("No se pudo cargar pesajes", error.message);
       setLoading(false);
       return;
     }
@@ -106,11 +107,15 @@ export function MonthlyWeightReport({
       source_row_hash: null,
     });
 
-    setMessage(error ? error.message : "Peso guardado");
-    if (!error) {
-      setEdit(null);
-      await load();
+    if (error) {
+      snack.error("Error al guardar peso", error.message);
+      setLoading(false);
+      return;
     }
+
+    snack.success("Peso guardado", "El registro mensual se actualizó correctamente.");
+    setEdit(null);
+    await load();
 
     setLoading(false);
   };
@@ -249,8 +254,6 @@ export function MonthlyWeightReport({
           </Card>
         </div>
       )}
-
-      {message && <p className="text-sm text-slate-600">{message}</p>}
     </div>
   );
 }

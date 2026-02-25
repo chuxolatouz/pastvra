@@ -1,45 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useSnack } from "@/components/ui/snack";
 import { Textarea } from "@/components/ui/textarea";
 import type { AnimalEvent } from "@/lib/db/types";
 
 const eventTypes = ["vacuna", "desparasitacion", "parto", "venta", "compra", "traslado_potrero", "otro"];
 
 export function EventManager({ farmId, animalId, userId }: { farmId: string; animalId: string; userId: string }) {
+  const snack = useSnack();
   const [items, setItems] = useState<AnimalEvent[]>([]);
   const [eventType, setEventType] = useState("vacuna");
   const [eventAt, setEventAt] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [payload, setPayload] = useState("{}");
-  const [message, setMessage] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("animal_events")
       .select("*")
       .eq("animal_id", animalId)
       .order("event_at", { ascending: false });
+    if (error) {
+      snack.error("No se pudo cargar eventos", error.message);
+      return;
+    }
     setItems((data ?? []) as AnimalEvent[]);
-  };
+  }, [animalId, snack]);
 
   useEffect(() => {
     load().catch(() => undefined);
-  }, [animalId]);
+  }, [load]);
 
   const create = async () => {
     let parsed: Record<string, unknown> | null = null;
     try {
       parsed = payload.trim() ? (JSON.parse(payload) as Record<string, unknown>) : null;
     } catch {
-      setMessage("Payload JSON inválido");
+      snack.error("JSON inválido", "Verifica el contenido del campo JSON.");
       return;
     }
 
@@ -54,12 +59,15 @@ export function EventManager({ farmId, animalId, userId }: { farmId: string; ani
       created_by: userId,
     });
 
-    setMessage(error ? error.message : "Evento creado");
-    if (!error) {
-      setNotes("");
-      setPayload("{}");
-      await load();
+    if (error) {
+      snack.error("Error al guardar evento", error.message);
+      return;
     }
+
+    snack.success("Evento creado", "El evento quedó registrado en el historial del animal.");
+    setNotes("");
+    setPayload("{}");
+    await load();
   };
 
   return (
@@ -81,7 +89,7 @@ export function EventManager({ farmId, animalId, userId }: { farmId: string; ani
           <Input type="date" value={eventAt} onChange={(e) => setEventAt(e.target.value)} />
         </div>
         <div>
-          <Label>Payload JSON</Label>
+          <Label>Datos JSON</Label>
           <Textarea value={payload} onChange={(e) => setPayload(e.target.value)} />
         </div>
         <div>
@@ -89,7 +97,7 @@ export function EventManager({ farmId, animalId, userId }: { farmId: string; ani
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
         <Button onClick={create}>Guardar evento</Button>
-        {message && <CardDescription>{message}</CardDescription>}
+        <CardDescription>Usa JSON para campos extra cuando el tipo de evento lo requiera.</CardDescription>
       </Card>
 
       <Card>

@@ -17,14 +17,20 @@ export default async function Home() {
     .select("role,active")
     .eq("user_id", user.id)
     .eq("active", true)
-    .order("created_at", { ascending: true })
-    .limit(1);
+    .order("created_at", { ascending: true });
 
-  const membership = memberships?.[0] as { role: "admin" | "supervisor" | "operador" } | undefined;
+  const roles = (memberships ?? []).map((m) => m.role as "admin" | "supervisor" | "operador");
+  const bestRole = roles.sort((a, b) => rank(b) - rank(a))[0];
 
-  if (!membership) {
+  if (!bestRole) {
     redirect("/unauthorized");
   }
 
-  redirect(defaultRouteForRole(membership.role));
+  redirect(defaultRouteForRole(bestRole));
+}
+
+function rank(role: "admin" | "supervisor" | "operador") {
+  if (role === "admin") return 3;
+  if (role === "supervisor") return 2;
+  return 1;
 }

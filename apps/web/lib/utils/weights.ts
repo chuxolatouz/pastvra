@@ -58,14 +58,14 @@ export function buildTags(params: {
   const tags: string[] = [];
   const adg = calculateAdg(params.previous, params.current);
 
-  if (params.previous && params.current.weight_kg < params.previous.weight_kg) tags.push("weight_loss");
-  if (adg !== null && adg < params.lowGainThreshold) tags.push("low_gain");
+  if (params.previous && params.current.weight_kg < params.previous.weight_kg) tags.push("Perdida de peso");
+  if (adg !== null && adg < params.lowGainThreshold) tags.push("Ganancia baja");
   if (
     params.previous &&
     differenceInCalendarDays(parseISO(params.current.weighed_at), parseISO(params.previous.weighed_at)) >
       params.overdueDays
   ) {
-    tags.push("overdue");
+    tags.push("Pesaje vencido");
   }
 
   return tags;

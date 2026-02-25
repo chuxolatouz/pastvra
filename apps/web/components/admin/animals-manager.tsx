@@ -9,9 +9,11 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useSnack } from "@/components/ui/snack";
 import { Textarea } from "@/components/ui/textarea";
 
 const base = {
+  rubro: "bovino",
   chip_id: "",
   ear_tag: "",
   name: "",
@@ -28,39 +30,59 @@ const base = {
   current_paddock_id: "",
 };
 
-export function AnimalsManager({ farmId }: { farmId: string }) {
+export function AnimalsManager({
+  farmId,
+  detailBasePath = "/admin/animales",
+}: {
+  farmId: string;
+  detailBasePath?: string;
+}) {
+  const snack = useSnack();
   const [items, setItems] = useState<Animal[]>([]);
   const [paddocks, setPaddocks] = useState<Paddock[]>([]);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(base);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
 
   const load = async () => {
     const supabase = createClient();
-    const [{ data: animals }, { data: padds }] = await Promise.all([
+    const [{ data: animals, error: animalsError }, { data: padds, error: paddocksError }] = await Promise.all([
       supabase.from("animals").select("*").eq("farm_id", farmId).order("created_at", { ascending: false }),
       supabase.from("paddocks").select("*").eq("farm_id", farmId).order("code"),
     ]);
+
+    if (animalsError) {
+      snack.error("No se pudo cargar animales", animalsError.message);
+      return;
+    }
+
+    if (paddocksError) {
+      snack.error("No se pudo cargar potreros", paddocksError.message);
+      return;
+    }
+
     setItems((animals ?? []) as Animal[]);
     setPaddocks((padds ?? []) as Paddock[]);
   };
 
   useEffect(() => {
     load().catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [farmId]);
 
   const filtered = useMemo(() => {
     const t = search.trim().toLowerCase();
     if (!t) return items;
-    return items.filter((a) =>
-      [a.chip_id, a.ear_tag, a.name].some((x) => (x ?? "").toLowerCase().includes(t)),
-    );
+    return items.filter((a) => {
+      const ref = `${a.chip_id ?? ""} ${a.ear_tag ?? ""} ${a.name ?? ""} ${a.rubro}`.toLowerCase();
+      return ref.includes(t);
+    });
   }, [items, search]);
 
   const fillEdit = (animal: Animal) => {
     setEditingId(animal.id);
     setForm({
+      rubro: animal.rubro,
       chip_id: animal.chip_id ?? "",
       ear_tag: animal.ear_tag ?? "",
       name: animal.name ?? "",
@@ -82,6 +104,7 @@ export function AnimalsManager({ farmId }: { farmId: string }) {
     const supabase = createClient();
     const payload = {
       farm_id: farmId,
+      rubro: form.rubro as "bovino" | "bufalino",
       chip_id: form.chip_id || null,
       ear_tag: form.ear_tag || null,
       name: form.name || null,
@@ -103,23 +126,43 @@ export function AnimalsManager({ farmId }: { farmId: string }) {
       : supabase.from("animals").insert(payload);
 
     const { error } = await query;
-    setMessage(error ? error.message : editingId ? "Animal actualizado" : "Animal creado");
-
-    if (!error) {
-      setEditingId(null);
-      setForm(base);
-      await load();
+    if (error) {
+      snack.error("Error al guardar animal", error.message);
+      return;
     }
+
+    snack.success(editingId ? "Animal actualizado" : "Animal creado", "Los datos se guardaron correctamente.");
+    setEditingId(null);
+    setForm(base);
+    await load();
   };
 
   return (
     <div className="space-y-4">
       <Card className="space-y-3">
-        <CardTitle>{editingId ? "Editar bovino" : "Nuevo bovino"}</CardTitle>
+        <CardTitle>{editingId ? "Editar animal" : "Nuevo animal"}</CardTitle>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <Label>Chip ID (15)</Label>
-            <Input value={form.chip_id} onChange={(e) => setForm((s) => ({ ...s, chip_id: e.target.value }))} />
+            <Label>Rubro</Label>
+            <Select value={form.rubro} onChange={(e) => setForm((s) => ({ ...s, rubro: e.target.value }))}>
+              <option value="bovino">Bovino</option>
+              <option value="bufalino">Bufalino</option>
+            </Select>
+          </div>
+          <div>
+            <Label>Género</Label>
+            <Select value={form.sex} onChange={(e) => setForm((s) => ({ ...s, sex: e.target.value }))}>
+              <option value="H">Hembra</option>
+              <option value="M">Macho</option>
+            </Select>
+          </div>
+          <div>
+            <Label>Chip / identificador (opcional)</Label>
+            <Input
+              value={form.chip_id}
+              onChange={(e) => setForm((s) => ({ ...s, chip_id: e.target.value }))}
+              placeholder="Ej: 4333"
+            />
           </div>
           <div>
             <Label>Arete</Label>
@@ -128,13 +171,6 @@ export function AnimalsManager({ farmId }: { farmId: string }) {
           <div>
             <Label>Nombre</Label>
             <Input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
-          </div>
-          <div>
-            <Label>Sexo</Label>
-            <Select value={form.sex} onChange={(e) => setForm((s) => ({ ...s, sex: e.target.value }))}>
-              <option value="H">Hembra</option>
-              <option value="M">Macho</option>
-            </Select>
           </div>
           <div>
             <Label>Raza</Label>
@@ -230,13 +266,13 @@ export function AnimalsManager({ farmId }: { farmId: string }) {
             </Button>
           )}
         </div>
-        {message && <CardDescription>{message}</CardDescription>}
+        <CardDescription>El identificador por chip es opcional y admite texto libre.</CardDescription>
       </Card>
 
       <Card className="space-y-3">
-        <CardTitle>Listado de bovinos</CardTitle>
+        <CardTitle>Listado de animales</CardTitle>
         <Input
-          placeholder="Buscar por chipId, arete o nombre"
+          placeholder="Buscar por chip, arete, nombre o rubro"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -245,18 +281,24 @@ export function AnimalsManager({ farmId }: { farmId: string }) {
             <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3">
               <div>
                 <p className="font-bold text-slate-900">{a.name || "Sin nombre"}</p>
-                <p className="text-sm text-slate-600">Chip: {a.chip_id || "-"} | Arete: {a.ear_tag || "-"}</p>
+                <p className="text-sm text-slate-600">
+                  Rubro: {a.rubro === "bovino" ? "Bovino" : "Bufalino"} | Chip: {a.chip_id || "-"} | Arete: {a.ear_tag || "-"}
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => fillEdit(a)}>
                   Editar
                 </Button>
-                <Link href={`/animal/${a.id}`} className="rounded-xl bg-slate-200 px-3 py-2 text-sm font-semibold">
+                <Link
+                  href={`${detailBasePath}/${a.id}`}
+                  className="rounded-xl bg-slate-200 px-3 py-2 text-sm font-semibold"
+                >
                   Ver detalle
                 </Link>
               </div>
             </div>
           ))}
+          {!filtered.length && <CardDescription>No hay animales para mostrar con ese filtro.</CardDescription>}
         </div>
       </Card>
     </div>

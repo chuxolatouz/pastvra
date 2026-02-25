@@ -5,14 +5,16 @@ export default function HelpPage() {
     <div className="space-y-4">
       <h2 className="text-2xl font-black">Ayuda</h2>
       <Card>
-        <CardTitle>Wizard de pesaje</CardTitle>
-        <CardDescription>1. Escanea o escribe chip/arete. 2. Confirma animal. 3. Ingresa peso. 4. Guarda.</CardDescription>
+        <CardTitle>Asistente de pesaje</CardTitle>
+        <CardDescription>
+          1. Escanea o escribe chip/arete/identificador. 2. Confirma animal. 3. Ingresa peso. 4. Guarda.
+        </CardDescription>
       </Card>
       <Card>
-        <CardTitle>Modo offline</CardTitle>
+        <CardTitle>Modo sin conexión</CardTitle>
         <CardDescription>
           Si no hay internet, el pesaje se guarda en pendientes. Usa el botón &quot;Sincronizar&quot; al volver
-          online.
+          a tener conexión.
         </CardDescription>
       </Card>
     </div>

@@ -8,6 +8,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useSnack } from "@/components/ui/snack";
 import { Badge } from "@/components/ui/badge";
 
 type MembershipRow = Membership & { email: string | null };
@@ -21,11 +22,11 @@ export function UsersManager({
   canManage: boolean;
   canInviteService: boolean;
 }) {
+  const snack = useSnack();
   const [items, setItems] = useState<MembershipRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("operador");
-  const [message, setMessage] = useState("");
 
   const roles = useMemo(() => ["admin", "supervisor", "operador"] as Role[], []);
 
@@ -40,7 +41,7 @@ export function UsersManager({
       .order("created_at", { ascending: true });
 
     if (membershipsError) {
-      setMessage(membershipsError.message);
+      snack.error("No se pudieron cargar miembros", membershipsError.message);
       setLoading(false);
       return;
     }
@@ -79,12 +80,17 @@ export function UsersManager({
     const payload = (await res.json()) as { error?: string; ok?: boolean; invitationSent?: boolean };
 
     if (!res.ok || !payload.ok) {
-      setMessage(payload.error ?? "No se pudo invitar");
+      snack.error("Error al invitar usuario", payload.error ?? "No se pudo invitar");
       setLoading(false);
       return;
     }
 
-    setMessage(payload.invitationSent ? "Invitación enviada y membership asignada" : "Membership asignada a usuario existente");
+    snack.success(
+      "Usuario invitado",
+      payload.invitationSent
+        ? "Se envió invitación y se asignó membresía."
+        : "Se asignó membresía a un usuario existente.",
+    );
     setEmail("");
     await load();
     setLoading(false);
@@ -99,7 +105,13 @@ export function UsersManager({
     });
 
     const payload = (await res.json()) as { error?: string; ok?: boolean };
-    setMessage(payload.error ?? "Rol actualizado");
+    if (payload.error || !payload.ok) {
+      snack.error("Error al actualizar rol", payload.error ?? "No se pudo actualizar rol");
+      setLoading(false);
+      return;
+    }
+
+    snack.success("Rol actualizado", "El cambio de rol se aplicó correctamente.");
     await load();
     setLoading(false);
   };
@@ -113,7 +125,13 @@ export function UsersManager({
     });
 
     const payload = (await res.json()) as { error?: string; ok?: boolean };
-    setMessage(payload.error ?? (active ? "Usuario activado" : "Usuario desactivado"));
+    if (payload.error || !payload.ok) {
+      snack.error("Error al actualizar estado", payload.error ?? "No se pudo actualizar estado");
+      setLoading(false);
+      return;
+    }
+
+    snack.success(active ? "Usuario activado" : "Usuario desactivado", "El estado del acceso fue actualizado.");
     await load();
     setLoading(false);
   };
@@ -123,7 +141,7 @@ export function UsersManager({
       <Card className="space-y-3">
         <CardTitle>Invitar usuario</CardTitle>
         <CardDescription>
-          Admin puede invitar por email y asignar rol de forma segura desde servidor (service role solo backend).
+          El administrador puede invitar por correo y asignar rol de forma segura desde servidor.
         </CardDescription>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
@@ -167,7 +185,7 @@ export function UsersManager({
             <div key={m.id} className="rounded-xl bg-slate-50 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-slate-900">{m.email ?? "Sin email en profile"}</p>
+                  <p className="font-semibold text-slate-900">{m.email ?? "Sin correo en perfil"}</p>
                   <p className="font-mono text-xs text-slate-600">{m.user_id}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -200,7 +218,6 @@ export function UsersManager({
           ))}
           {!items.length && <CardDescription>No hay miembros en esta finca.</CardDescription>}
         </div>
-        {message && <CardDescription className="mt-3">{message}</CardDescription>}
       </Card>
     </div>
   );

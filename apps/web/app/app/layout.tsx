@@ -6,7 +6,7 @@ export default async function OperatorLayout({ children }: { children: React.Rea
 
   return (
     <div>
-      <TopShell role={membership.role} title="Operación" userEmail={user.email} />
+      <TopShell role={membership.role} title="Operacion" userEmail={user.email} context="app" />
       <main className="mx-auto max-w-4xl px-4 py-6">{children}</main>
     </div>
   );

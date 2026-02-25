@@ -7,6 +7,7 @@ import "@xyflow/react/dist/style.css";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useSnack } from "@/components/ui/snack";
 import type { Animal } from "@/lib/db/types";
 
 type GraphNode = {
@@ -40,6 +41,7 @@ function toRFEdge(e: GraphEdge) {
 
 export function TreeGraph({ farmId, rootAnimalId }: { farmId: string; rootAnimalId: string }) {
   const supabase = createClient();
+  const snack = useSnack();
   const [depth, setDepth] = useState(3);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -58,7 +60,8 @@ export function TreeGraph({ farmId, rootAnimalId }: { farmId: string; rootAnimal
         if (level > maxDepth || visited.has(`${id}-${level}`)) return;
         visited.add(`${id}-${level}`);
 
-        const { data: a } = await supabase.from("animals").select("*").eq("id", id).single();
+        const { data: a, error: animalError } = await supabase.from("animals").select("*").eq("id", id).single();
+        if (animalError) throw new Error(animalError.message);
         const animal = a as Animal | null;
         if (!animal) return;
 
@@ -103,12 +106,13 @@ export function TreeGraph({ farmId, rootAnimalId }: { farmId: string; rootAnimal
           });
         }
 
-        const { data: children } = await supabase
+        const { data: children, error: childrenError } = await supabase
           .from("animals")
           .select("id,name,ear_tag,chip_id")
           .eq("farm_id", farmId)
           .or(`sire_id.eq.${animal.id},dam_id.eq.${animal.id}`)
           .limit(30);
+        if (childrenError) throw new Error(childrenError.message);
 
         (children ?? []).forEach((child, idx) => {
           const childLabel = child.name || child.ear_tag || child.chip_id || child.id.slice(0, 6);
@@ -137,8 +141,11 @@ export function TreeGraph({ farmId, rootAnimalId }: { farmId: string; rootAnimal
         setNodes(g.nodes);
         setEdges(g.edges);
       })
-      .catch(() => undefined);
-  }, [buildGraph, depth, rootAnimalId, setEdges, setNodes]);
+      .catch((error) => {
+        const detail = error instanceof Error ? error.message : "Error inesperado";
+        snack.error("No se pudo cargar genealogía", detail);
+      });
+  }, [buildGraph, depth, rootAnimalId, setEdges, setNodes, snack]);
 
   return (
     <div className="space-y-3">

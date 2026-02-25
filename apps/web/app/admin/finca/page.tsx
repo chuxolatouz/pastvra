@@ -10,7 +10,7 @@ export default async function FarmPage() {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-black">Finca</h2>
-      <FarmForm farm={data} />
+      <FarmForm farm={data} canEdit={membership.role === "admin"} />
     </div>
   );
 }

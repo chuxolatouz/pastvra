@@ -9,6 +9,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { useSnack } from "@/components/ui/snack";
 import { Textarea } from "@/components/ui/textarea";
 
 type FormState = {
@@ -56,6 +57,7 @@ function toNullableNumber(value: string) {
 
 export function InventoryManager({ farmId, userId, canWrite }: { farmId: string; userId: string; canWrite: boolean }) {
   const supabase = createClient();
+  const snack = useSnack();
 
   const [rows, setRows] = useState<InventoryMovement[]>([]);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -67,7 +69,6 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
   const [destinations, setDestinations] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -85,7 +86,7 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
 
     const { data, error } = await query;
     if (error) {
-      setMessage(error.message);
+      snack.error("No se pudo cargar inventario", error.message);
       setLoading(false);
       return;
     }
@@ -95,11 +96,16 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
   };
 
   const loadFilterOptions = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("inventory_movements")
       .select("destination_name,category_name")
       .eq("farm_id", farmId)
       .order("created_at", { ascending: true });
+
+    if (error) {
+      snack.error("No se pudieron cargar filtros", error.message);
+      return;
+    }
 
     const list = (data ?? []) as Array<{ destination_name: string | null; category_name: string | null }>;
     setDestinations([...new Set(list.map((x) => x.destination_name).filter(Boolean) as string[])]);
@@ -140,13 +146,16 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
     };
 
     const { error } = await supabase.from("inventory_movements").insert(payload);
-    setMessage(error ? error.message : "Movimiento guardado");
-
-    if (!error) {
-      setForm({ ...initialForm, movement_date: form.movement_date });
-      await load();
-      await loadFilterOptions();
+    if (error) {
+      snack.error("Error al guardar movimiento", error.message);
+      setLoading(false);
+      return;
     }
+
+    snack.success("Movimiento guardado", "El inventario se actualizó correctamente.");
+    setForm({ ...initialForm, movement_date: form.movement_date });
+    await load();
+    await loadFilterOptions();
 
     setLoading(false);
   };
@@ -366,7 +375,7 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
         <Button onClick={saveMovement} disabled={!canWrite || loading} size="lg">
           {loading ? "Guardando..." : "Guardar movimiento"}
         </Button>
-        {!canWrite && <CardDescription>Modo lectura: solo admin/supervisor pueden editar inventario.</CardDescription>}
+        {!canWrite && <CardDescription>Modo lectura: solo administrador/supervisor pueden editar inventario.</CardDescription>}
       </Card>
 
       <Card>
@@ -438,8 +447,6 @@ export function InventoryManager({ farmId, userId, canWrite }: { farmId: string;
           </table>
         </div>
       </Card>
-
-      {message && <p className="text-sm text-slate-600">{message}</p>}
     </div>
   );
 }

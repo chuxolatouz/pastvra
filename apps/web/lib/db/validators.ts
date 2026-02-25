@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const chipIdSchema = z.string().regex(/^\d{15}$/, "Debe tener 15 dígitos");
+export const chipIdSchema = z.string().trim().min(1, "Identificador requerido");
 
 export const weightSchema = z.object({
   weight_kg: z.coerce.number().positive("Debe ser mayor a 0"),
@@ -18,6 +18,7 @@ export const paddockSchema = z.object({
 });
 
 export const animalSchema = z.object({
+  rubro: z.enum(["bovino", "bufalino"]),
   chip_id: z.string().optional().nullable(),
   ear_tag: z.string().optional().nullable(),
   name: z.string().optional().nullable(),

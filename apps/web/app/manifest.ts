@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name,
     short_name: "Pastvra",
-    description: "Administración ganadera con wizard de pesaje",
+    description: "Administracion ganadera con asistente de pesaje",
     start_url: "/app",
     display: "standalone",
     background_color: "#f8fafc",

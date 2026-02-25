@@ -13,13 +13,21 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-black">Dashboard</h2>
+      <h2 className="text-2xl font-black">Resumen</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat title="Bovinos" value={animals.count ?? 0} />
         <Stat title="Potreros" value={paddocks.count ?? 0} />
         <Stat title="Pesajes" value={weights.count ?? 0} />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
+        <Link href="/admin/fincas" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <CardTitle>Fincas (grilla)</CardTitle>
+          <CardDescription>Consulta todas tus fincas administrativas y accede al detalle.</CardDescription>
+        </Link>
+        <Link href="/admin/animales" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <CardTitle>Animales (grilla)</CardTitle>
+          <CardDescription>Vista global de animales con acceso a ficha individual.</CardDescription>
+        </Link>
         <Link href="/admin/inventario" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <CardTitle>Control de inventario</CardTitle>
           <CardDescription>Ledger con saldos acumulados, costos y filtros.</CardDescription>

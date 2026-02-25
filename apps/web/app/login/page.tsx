@@ -15,13 +15,13 @@ export default async function LoginPage() {
       .select("role")
       .eq("user_id", user.id)
       .eq("active", true)
-      .order("created_at", { ascending: true })
-      .limit(1);
+      .order("created_at", { ascending: true });
 
-    const membership = memberships?.[0] as { role: "admin" | "supervisor" | "operador" } | undefined;
+    const roles = (memberships ?? []).map((m) => m.role as "admin" | "supervisor" | "operador");
+    const bestRole = roles.sort((a, b) => rank(b) - rank(a))[0];
 
-    if (membership) {
-      redirect(defaultRouteForRole(membership.role));
+    if (bestRole) {
+      redirect(defaultRouteForRole(bestRole));
     }
 
     redirect("/unauthorized");
@@ -32,4 +32,10 @@ export default async function LoginPage() {
       <LoginForm />
     </main>
   );
+}
+
+function rank(role: "admin" | "supervisor" | "operador") {
+  if (role === "admin") return 3;
+  if (role === "supervisor") return 2;
+  return 1;
 }

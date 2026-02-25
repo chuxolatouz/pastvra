@@ -1,36 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSnack } from "@/components/ui/snack";
 import { Textarea } from "@/components/ui/textarea";
 import type { SoilTest } from "@/lib/db/types";
 
 export function PaddockDetail({ farmId, paddockId }: { farmId: string; paddockId: string }) {
+  const snack = useSnack();
   const [items, setItems] = useState<SoilTest[]>([]);
   const [testedAt, setTestedAt] = useState(new Date().toISOString().slice(0, 10));
   const [ph, setPh] = useState("");
   const [grass, setGrass] = useState("");
   const [sugar, setSugar] = useState("");
   const [notes, setNotes] = useState("");
-  const [message, setMessage] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("paddock_soil_tests")
       .select("*")
       .eq("paddock_id", paddockId)
       .order("tested_at", { ascending: false });
+    if (error) {
+      snack.error("No se pudo cargar análisis de suelo", error.message);
+      return;
+    }
     setItems((data ?? []) as SoilTest[]);
-  };
+  }, [paddockId, snack]);
 
   useEffect(() => {
     load().catch(() => undefined);
-  }, [paddockId]);
+  }, [load]);
 
   const save = async () => {
     const supabase = createClient();
@@ -44,20 +49,23 @@ export function PaddockDetail({ farmId, paddockId }: { farmId: string; paddockId
       notes: notes || null,
     });
 
-    setMessage(error ? error.message : "Soil test creado");
-    if (!error) {
-      setPh("");
-      setGrass("");
-      setSugar("");
-      setNotes("");
-      await load();
+    if (error) {
+      snack.error("Error al crear análisis de suelo", error.message);
+      return;
     }
+
+    snack.success("Análisis de suelo creado", "Se registró correctamente para este potrero.");
+    setPh("");
+    setGrass("");
+    setSugar("");
+    setNotes("");
+    await load();
   };
 
   return (
     <div className="space-y-4">
       <Card className="space-y-3">
-        <CardTitle>Nuevo soil test</CardTitle>
+        <CardTitle>Nuevo análisis de suelo</CardTitle>
         <div>
           <Label>Fecha</Label>
           <Input type="date" value={testedAt} onChange={(e) => setTestedAt(e.target.value)} />
@@ -79,7 +87,7 @@ export function PaddockDetail({ farmId, paddockId }: { farmId: string; paddockId
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
         <Button onClick={save}>Guardar</Button>
-        {message && <CardDescription>{message}</CardDescription>}
+        <CardDescription>Cada registro queda asociado al historial del potrero.</CardDescription>
       </Card>
 
       <Card>

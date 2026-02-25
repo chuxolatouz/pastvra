@@ -22,7 +22,7 @@ export default async function AppHomePage() {
         <BigButton
           href="/app/pesar"
           title="1) Pesar animal"
-          subtitle="Flujo wizard guiado"
+          subtitle="Flujo asistido"
           tooltip="Abre el asistente paso a paso para escanear y guardar un nuevo pesaje."
           icon={Scale}
         />
@@ -36,14 +36,14 @@ export default async function AppHomePage() {
         <BigButton
           href="/app/help"
           title="3) Ayuda"
-          subtitle="Tips de uso y accesibilidad"
-          tooltip="Muestra recomendaciones de uso en campo y modo offline."
+          subtitle="Consejos de uso y accesibilidad"
+          tooltip="Muestra recomendaciones de uso en campo y modo sin conexión."
           icon={CircleHelp}
         />
         {membership.role !== "operador" && (
           <BigButton
             href="/admin"
-            title="4) Panel admin"
+            title="4) Panel de administración"
             subtitle="Configuración y catálogos"
             tooltip="Accede a inventario, pesaje mensual, usuarios y configuración."
             icon={Shield}

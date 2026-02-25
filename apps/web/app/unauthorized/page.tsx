@@ -44,7 +44,7 @@ export default async function UnauthorizedPage() {
         </div>
         <CardTitle className="text-2xl">Acceso denegado</CardTitle>
         <CardDescription className="text-base text-slate-600">
-          Tu cuenta no tiene una membresía activa en ninguna granja. Contacta a tu administrador para
+          Tu cuenta no tiene una membresía activa en ninguna finca. Contacta a tu administrador para
           obtener acceso.
         </CardDescription>
         <div className="pt-4">

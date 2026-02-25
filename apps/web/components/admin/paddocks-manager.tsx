@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Paddock } from "@/lib/db/types";
@@ -8,26 +8,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSnack } from "@/components/ui/snack";
 import { Textarea } from "@/components/ui/textarea";
 
 export function PaddocksManager({ farmId }: { farmId: string }) {
+  const snack = useSnack();
   const [items, setItems] = useState<Paddock[]>([]);
   const [code, setCode] = useState("");
   const [hectares, setHectares] = useState("");
   const [notes, setNotes] = useState("");
-  const [message, setMessage] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("paddocks").select("*").eq("farm_id", farmId).order("code");
+    const { data, error } = await supabase.from("paddocks").select("*").eq("farm_id", farmId).order("code");
+    if (error) {
+      snack.error("No se pudo cargar potreros", error.message);
+      return;
+    }
     setItems((data ?? []) as Paddock[]);
-  };
+  }, [farmId, snack]);
 
   useEffect(() => {
     load().catch(() => undefined);
-  }, [farmId]);
+  }, [load]);
 
   const create = async () => {
+    if (!code.trim()) {
+      snack.error("Código requerido", "Ingresa un código para el potrero.");
+      return;
+    }
+
     const supabase = createClient();
     const { error } = await supabase.from("paddocks").insert({
       farm_id: farmId,
@@ -35,13 +45,16 @@ export function PaddocksManager({ farmId }: { farmId: string }) {
       hectares: hectares ? Number(hectares) : null,
       notes: notes || null,
     });
-    setMessage(error ? error.message : "Potrero creado");
-    if (!error) {
-      setCode("");
-      setHectares("");
-      setNotes("");
-      await load();
+    if (error) {
+      snack.error("Error al crear potrero", error.message);
+      return;
     }
+
+    snack.success("Potrero creado", `Se registró el potrero ${code}.`);
+    setCode("");
+    setHectares("");
+    setNotes("");
+    await load();
   };
 
   return (
@@ -61,7 +74,7 @@ export function PaddocksManager({ farmId }: { farmId: string }) {
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
         <Button onClick={create}>Crear potrero</Button>
-        {message && <CardDescription>{message}</CardDescription>}
+        <CardDescription>Los cambios se guardan y se reflejan de inmediato en la lista.</CardDescription>
       </Card>
 
       <div className="space-y-3">

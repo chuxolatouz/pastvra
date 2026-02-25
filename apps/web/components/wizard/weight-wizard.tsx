@@ -13,12 +13,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useSnack } from "@/components/ui/snack";
 import type { Animal, Farm, AnimalWeight } from "@/lib/db/types";
 
 const steps = ["Escanear", "Confirmar", "Peso", "Guardar", "Resultado"];
 
 export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
   const supabase = createClient();
+  const snack = useSnack();
   const online = useOnlineStatus();
   const [step, setStep] = useState(0);
   const [query, setQuery] = useState("");
@@ -34,7 +36,10 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
 
   const fetchAnimal = async (value: string) => {
     const term = value.trim();
-    if (!term) return;
+    if (!term) {
+      snack.error("Identificador requerido", "Escribe chip, arete o identificador libre.");
+      return;
+    }
 
     if (online) {
       const base = supabase
@@ -44,25 +49,39 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
         .or(`chip_id.eq.${term},ear_tag.eq.${term}`)
         .limit(1);
 
-      const { data } = await base;
+      const { data, error } = await base;
+      if (error) {
+        setMessage(error.message);
+        snack.error("Error al buscar animal", error.message);
+        return;
+      }
+
       const found = (data?.[0] ?? null) as Animal | null;
 
       if (!found) {
         setMessage("No se encontró animal");
+        snack.error("Animal no encontrado", "Verifica el identificador e intenta nuevamente.");
         return;
       }
 
-      const { data: w } = await supabase
+      const { data: w, error: weightsError } = await supabase
         .from("animal_weights")
         .select("*")
         .eq("animal_id", found.id)
         .order("weighed_at", { ascending: false });
+
+      if (weightsError) {
+        setMessage(weightsError.message);
+        snack.error("No se pudo cargar historial", weightsError.message);
+        return;
+      }
 
       const local = (w ?? []) as AnimalWeight[];
       setAnimal(found);
       setWeights(local);
       setStep(1);
       setMessage("");
+      snack.success("Animal encontrado", found.name || found.chip_id || found.ear_tag || found.id.slice(0, 8));
 
       await db.animal_cache.put({
         id: found.id,
@@ -74,59 +93,63 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
         last_weight_kg: local[0]?.weight_kg ?? null,
         last_weighed_at: local[0]?.weighed_at ?? null,
       });
-    } else {
-      const cached = await db.animal_cache
-        .where("farm_id")
-        .equals(farm.id)
-        .filter((a) => a.chip_id === term || a.ear_tag === term)
-        .first();
-
-      if (!cached) {
-        setMessage("Sin conexión y animal no está en caché local.");
-        return;
-      }
-
-      setAnimal({
-        id: cached.id,
-        farm_id: cached.farm_id,
-        chip_id: cached.chip_id,
-        ear_tag: cached.ear_tag,
-        name: cached.name,
-        photo_path: cached.photo_path,
-        sex: "H",
-        breed: null,
-        birth_date: new Date().toISOString().slice(0, 10),
-        cost: null,
-        status: "vivo",
-        notes: null,
-        current_paddock_id: null,
-        sire_id: null,
-        dam_id: null,
-        sire_external: null,
-        dam_external: null,
-      });
-
-      setWeights(
-        cached.last_weight_kg
-          ? [
-              {
-                id: "offline-last",
-                farm_id: cached.farm_id,
-                animal_id: cached.id,
-                weighed_at: cached.last_weighed_at ?? new Date().toISOString().slice(0, 10),
-                weight_kg: cached.last_weight_kg,
-                client_generated_id: "offline",
-                source: "offline_cache",
-                source_row_hash: null,
-                created_by: userId,
-                created_at: new Date().toISOString(),
-              },
-            ]
-          : [],
-      );
-      setStep(1);
-      setMessage("");
+      return;
     }
+
+    const cached = await db.animal_cache
+      .where("farm_id")
+      .equals(farm.id)
+      .filter((a) => a.chip_id === term || a.ear_tag === term)
+      .first();
+
+    if (!cached) {
+      setMessage("Sin conexión y animal no está en caché local.");
+      snack.error("Sin conexión", "El animal no está disponible en caché local.");
+      return;
+    }
+
+    setAnimal({
+      id: cached.id,
+      farm_id: cached.farm_id,
+      rubro: "bovino",
+      chip_id: cached.chip_id,
+      ear_tag: cached.ear_tag,
+      name: cached.name,
+      photo_path: cached.photo_path,
+      sex: "H",
+      breed: null,
+      birth_date: new Date().toISOString().slice(0, 10),
+      cost: null,
+      status: "vivo",
+      notes: null,
+      current_paddock_id: null,
+      sire_id: null,
+      dam_id: null,
+      sire_external: null,
+      dam_external: null,
+    });
+
+    setWeights(
+      cached.last_weight_kg
+        ? [
+            {
+              id: "offline-last",
+              farm_id: cached.farm_id,
+              animal_id: cached.id,
+              weighed_at: cached.last_weighed_at ?? new Date().toISOString().slice(0, 10),
+              weight_kg: cached.last_weight_kg,
+              client_generated_id: "offline",
+              source: "offline_cache",
+              source_row_hash: null,
+              created_by: userId,
+              created_at: new Date().toISOString(),
+            },
+          ]
+        : [],
+    );
+    setStep(1);
+    setMessage("");
+    snack.success("Animal cargado en modo local", cached.name || cached.chip_id || cached.ear_tag || cached.id.slice(0, 8));
   };
 
   const save = async () => {
@@ -148,6 +171,7 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
 
       if (error) {
         setMessage(`Error: ${error.message}`);
+        snack.error("Error al guardar pesaje", error.message);
         setSaving(false);
         return;
       }
@@ -165,7 +189,12 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
     setSavedPoint(newPoint);
     setStep(4);
     setSaving(false);
-    setMessage(online ? "Guardado online" : "Guardado offline (pending)");
+    setMessage(online ? "Guardado en línea" : "Guardado sin conexión (pendiente de sincronizar)");
+    if (online) {
+      snack.success("Pesaje guardado", "El registro se almacenó correctamente en la base de datos.");
+    } else {
+      snack.info("Pesaje guardado localmente", "Se sincronizará cuando vuelvas a tener conexión.");
+    }
   };
 
   const result = useMemo(() => {
@@ -208,21 +237,21 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
   return (
     <div className="space-y-4">
       <Card>
-        <CardTitle>Wizard de pesado</CardTitle>
+        <CardTitle>Asistente de pesaje</CardTitle>
         <CardDescription>Pasos: {steps.map((s, i) => `${i + 1}.${s}${i === step ? "*" : ""}`).join(" | ")}</CardDescription>
       </Card>
 
       {step === 0 && (
         <Card className="space-y-4">
           <CardTitle>Paso 1: Escanear o ingresar ID</CardTitle>
-          <CardDescription>Escanea QR con cámara o escribe chip (15 dígitos) / arete manualmente.</CardDescription>
+          <CardDescription>Escanea QR con cámara o escribe chip/arete manualmente.</CardDescription>
           <QrScanner
             onDetected={(value) => {
               setQuery(value);
               fetchAnimal(value).catch(() => undefined);
             }}
           />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="chipId o arete" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="chip o arete" />
           <Button onClick={() => fetchAnimal(query)} size="lg">
             Buscar animal
           </Button>
@@ -234,6 +263,7 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
           <CardTitle>Paso 2: Confirmar animal</CardTitle>
           <div className="rounded-xl bg-slate-50 p-3">
             <p className="text-xl font-black">{animal.name || "Sin nombre"}</p>
+            <p>Rubro: {animal.rubro === "bovino" ? "Bovino" : "Bufalino"}</p>
             <p>Chip: {animal.chip_id || "-"}</p>
             <p>Arete: {animal.ear_tag || "-"}</p>
             <p>
@@ -272,7 +302,7 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
         <Card className="space-y-3">
           <CardTitle>Paso 4: Guardar</CardTitle>
           <CardDescription>
-            {online ? "Conexión activa: se guardará en Supabase." : "Sin conexión: se guardará pending en el equipo."}
+            {online ? "Conexión activa: se guardará en Supabase." : "Sin conexión: se guardará pendiente en el equipo."}
           </CardDescription>
           <Button onClick={save} disabled={saving} size="lg">
             {saving ? "Guardando..." : "Guardar pesaje"}
@@ -308,7 +338,7 @@ export function WeightWizard({ farm, userId }: { farm: Farm; userId: string }) {
             >
               Nuevo pesaje
             </Button>
-            <Link href={`/animal/${animal.id}`} className="rounded-xl bg-slate-200 px-4 py-2 font-semibold">
+            <Link href={`/app/animales/${animal.id}`} className="rounded-xl bg-slate-200 px-4 py-2 font-semibold">
               Ver animal
             </Link>
           </div>
